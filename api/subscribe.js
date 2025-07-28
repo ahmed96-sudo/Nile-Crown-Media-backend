@@ -48,7 +48,7 @@ module.exports = async (req, res) => {
     }
 
 
-    var base_url = req.protocol + '://' + req.get('host');
+    var base_url = "https://nile-crown-media-backend.vercel.app";
 
     const mailOptions = {
         from: recipientEmail,
