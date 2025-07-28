@@ -1,19 +1,12 @@
 const { validationResult } = require('express-validator');
 const subscribeEmailValidationResult = require('../middlewares/ValidationResults').subscribeEmailValidationResult;
 const transporter = require('../utils/emailConfigurator');
-const fs = require('fs');
-const path = require('path');
+const pool = require('../utils/db');
+const CORShandler = require('../middlewares/CORShandler');
 
 module.exports = async (req, res) => {
-    if (req.method === 'OPTIONS') {
-        res.setHeader('Access-Control-Allow-Origin', 'https://nile-crown-media.vercel.app');
-        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-        return res.status(200).end();
-    }
+    CORShandler(req, res);
 
-    res.setHeader('Access-Control-Allow-Origin', 'https://nile-crown-media.vercel.app');
-    
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
     for (const validator of subscribeEmailValidationResult) {
@@ -24,24 +17,36 @@ module.exports = async (req, res) => {
     if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     const { email } = req.body;
-    const SUBSCRIBERS_FILE = path.join(process.cwd(), 'data', 'subscribers.json');
+    // const SUBSCRIBERS_FILE = path.join(process.cwd(), 'data', 'subscribers.json');
     // const recipientEmail = "hello@nilecrownmedia.com"
     const recipientEmail = "ahmed.saeed.12855@gmail.com"
     // if (!email || typeof email !== 'string' || !email.includes('@')) {
     //     return res.status(400).json({ message: 'Invalid email' });
     // }
 
-    let subscribers = [];
-    if (fs.existsSync(SUBSCRIBERS_FILE)) {
-        subscribers = JSON.parse(fs.readFileSync(SUBSCRIBERS_FILE, 'utf8'));
+    // let subscribers = [];
+    // if (fs.existsSync(SUBSCRIBERS_FILE)) {
+    //     subscribers = JSON.parse(fs.readFileSync(SUBSCRIBERS_FILE, 'utf8'));
+    // }
+
+    // if (subscribers.includes(email)) {
+    //     return res.status(409).json({ success: false, message: 'Already subscribed' });
+    // }
+
+    // subscribers.push(email);
+    // fs.writeFileSync(SUBSCRIBERS_FILE, JSON.stringify(subscribers, null, 2));
+
+    try {
+        await pool.query(
+            'INSERT INTO subscribers (email) VALUES ($1) ON CONFLICT (email) DO NOTHING',
+            [email]
+        );
+        // return res.status(200).json({ message: 'Subscribed successfully.' });
+    } catch (error) {
+        console.error('Error subscribing:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 
-    if (subscribers.includes(email)) {
-        return res.status(409).json({ success: false, message: 'Already subscribed' });
-    }
-
-    subscribers.push(email);
-    fs.writeFileSync(SUBSCRIBERS_FILE, JSON.stringify(subscribers, null, 2));
 
     var base_url = req.protocol + '://' + req.get('host');
 

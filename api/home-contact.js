@@ -1,17 +1,11 @@
 const { validationResult } = require('express-validator');
 const homeContactValidationResult = require('../middlewares/ValidationResults').homeContactValidationResult;
 const transporter = require('../utils/emailConfigurator');
+const CORShandler = require('../middlewares/CORShandler');
 
 module.exports = async (req, res) => {
-    if (req.method === 'OPTIONS') {
-        res.setHeader('Access-Control-Allow-Origin', 'https://nile-crown-media.vercel.app');
-        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-        return res.status(200).end();
-    }
+    CORShandler(req, res);
 
-    res.setHeader('Access-Control-Allow-Origin', 'https://nile-crown-media.vercel.app');
-    
     if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method Not Allowed' });
 
     for (const validator of homeContactValidationResult) {
